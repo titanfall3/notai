@@ -1,6 +1,6 @@
 import http.server, urllib.request
 
-API_SECRET = "MySecretKey99"  # Set your secret token here
+API_SECRET = "$jiGg1eFaR736&,"  # Set your secret token here
 
 class AuthProxy(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
