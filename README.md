@@ -1,2 +1,0 @@
-# notai
-isai
