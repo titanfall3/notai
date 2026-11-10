@@ -2,78 +2,616 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local AI Web Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Local AI Studio Mobile</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0e0e12; color: #e2e2e6; display: flex; flex-direction: column; height: 100dvh; }
-    header { background: #1a1a24; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #2b2b36; }
-    .config-row { display: flex; gap: 8px; }
-    input, select, button { border-radius: 8px; border: 1px solid #3a3a48; background: #161620; color: #fff; padding: 8px 12px; font-size: 14px; }
-    input[type="text"] { flex-grow: 1; }
-    button { background: #007acc; cursor: pointer; border: none; font-weight: bold; }
-    button:hover { background: #005999; }
-    #chat-box { flex-grow: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .message { max-width: 80%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 15px; word-break: break-word; white-space: pre-wrap; }
-    .user { align-self: flex-end; background: #007acc; color: #fff; }
-    .ai { align-self: flex-start; background: #22222c; }
-    .system { align-self: center; font-size: 12px; color: #888; }
-    footer { padding: 12px 16px; background: #161620; display: flex; gap: 8px; }
+    :root {
+      --bg-main: #0e0e12;
+      --bg-panel: #161620;
+      --bg-header: rgba(26, 26, 36, 0.9);
+      --bg-ai: #1e1e2a;
+      --bg-user: #007acc;
+      --border: #2b2b38;
+      --text: #e6e6f0;
+      --text-muted: #8a8a9e;
+      --danger: #d93838;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+      background: var(--bg-main);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* --- Top Navigation Bar --- */
+    header {
+      background: var(--bg-header);
+      backdrop-filter: blur(10px);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .icon-btn {
+      background: #222230;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .icon-btn:active { transform: scale(0.95); }
+
+    .header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 65%;
+    }
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #model-select {
+      background: transparent;
+      color: #4da6ff;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+      cursor: pointer;
+    }
+    #model-select option { background: var(--bg-panel); color: var(--text); }
+
+    /* --- Slide-Out Drawers (History & Settings) --- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 20;
+    }
+    .overlay.active { opacity: 1; pointer-events: auto; }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 285px;
+      max-width: 82vw;
+      background: var(--bg-panel);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-right: 1px solid var(--border);
+    }
+    .drawer.left { left: 0; transform: translateX(-100%); }
+    .drawer.right { right: 0; transform: translateX(100%); border-right: none; border-left: 1px solid var(--border); }
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-body {
+      padding: 14px;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* --- History Sidebar Items --- */
+    .new-chat-btn {
+      background: var(--bg-user);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .chat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .chat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .chat-item.active {
+      background: rgba(0, 122, 204, 0.18);
+      border-color: var(--bg-user);
+    }
+    .chat-item-title {
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-grow: 1;
+      margin-right: 8px;
+    }
+    .delete-chat-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 15px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .delete-chat-btn:hover { color: var(--danger); }
+
+    /* --- Settings Controls --- */
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; }
+    input[type="text"], select, textarea {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #101018;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 16px; /* Prevents iOS auto-zoom */
+      outline: none;
+    }
+    textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+    input[type="range"] { width: 100%; accent-color: var(--bg-user); }
+
+    .connect-btn {
+      background: var(--bg-user);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    /* --- Chat Message Feed --- */
+    #chat-box {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .message-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+    }
+    .message-wrapper.user { align-self: flex-end; align-items: flex-end; }
+    .message-wrapper.ai { align-self: flex-start; align-items: flex-start; }
+
+    .message {
+      padding: 11px 15px;
+      border-radius: 16px;
+      line-height: 1.5;
+      font-size: 15px;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .user .message {
+      background: var(--bg-user);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .ai .message {
+      background: var(--bg-ai);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-stats {
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    /* --- Bottom Input Bar --- */
+    footer {
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    #user-input {
+      flex-grow: 1;
+      border-radius: 20px;
+      padding: 10px 16px;
+      max-height: 120px;
+      min-height: 42px;
+      line-height: 1.35;
+      resize: none;
+    }
+
+    .send-btn {
+      background: var(--bg-user);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="config-row">
-      <input type="text" id="tunnel-url" placeholder="Backend URL (e.g. https://xxxx.trycloudflare.com)">
-      <button onclick="fetchModels()">Connect</button>
+  <!-- Dark Backdrop for Mobile Drawers -->
+  <div id="overlay" class="overlay" onclick="closeDrawers()"></div>
+
+  <!-- Left Drawer: Saved Chat History -->
+  <aside id="left-drawer" class="drawer left">
+    <div class="drawer-header">
+      <span>Saved Convos</span>
+      <button class="icon-btn" style="width:32px;height:32px;font-size:14px;" onclick="closeDrawers()">✕</button>
     </div>
-    <div class="config-row">
-      <select id="model-select" style="flex-grow: 1;">
+    <div class="drawer-body">
+      <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
+      <div id="chat-list" class="chat-list"></div>
+    </div>
+  </aside>
+
+  <!-- Right Drawer: Engine & System Prompt Settings -->
+  <aside id="right-drawer" class="drawer right">
+    <div class="drawer-header">
+      <span>Engine Settings</span>
+      <button class="icon-btn" style="width:32px;height:32px;font-size:14px;" onclick="closeDrawers()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="field-group">
+        <label class="field-label">Backend Tunnel URL</label>
+        <input type="text" id="tunnel-url" placeholder="https://xxxx.trycloudflare.com" onchange="saveSettings()">
+        <button class="connect-btn" onclick="fetchModels()">Connect & Load Models</button>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">System Prompt (Persona / Rules)</label>
+        <textarea id="system-prompt" placeholder="You are a helpful AI assistant..." onchange="saveSettings()"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Context Length (Tokens)</label>
+        <select id="ctx-size" onchange="saveSettings()">
+          <option value="2048">2048 (Fast / Low VRAM)</option>
+          <option value="4096">4096 (Balanced)</option>
+          <option value="8192">8192 (Long Memory)</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">
+          <span>Temperature</span>
+          <span id="temp-val">0.7</span>
+        </label>
+        <input type="range" id="temperature" min="0" max="1.5" step="0.1" value="0.7" oninput="document.getElementById('temp-val').textContent = this.value; saveSettings()">
+      </div>
+
+      <div class="switch-row">
+        <span>Pin Model in VRAM</span>
+        <input type="checkbox" id="pin-vram" checked onchange="saveSettings()" style="width:18px;height:18px;accent-color:var(--bg-user);">
+      </div>
+    </div>
+  </aside>
+
+  <!-- Top Header -->
+  <header>
+    <button class="icon-btn" onclick="toggleDrawer('left')" title="Saved Chats">☰</button>
+    <div class="header-center">
+      <div id="current-chat-title" class="header-title">New Chat</div>
+      <select id="model-select" onchange="saveSettings()">
         <option value="llama3.2">llama3.2</option>
       </select>
     </div>
+    <button class="icon-btn" onclick="toggleDrawer('right')" title="Settings">⚙</button>
   </header>
 
-  <div id="chat-box">
-    <div class="message system">Enter your backend URL above and click Connect to start.</div>
-  </div>
+  <!-- Main Chat Container -->
+  <main id="chat-box"></main>
 
+  <!-- Bottom Input Bar -->
   <footer>
-    <input type="text" id="user-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()">
-    <button onclick="sendMessage()">Send</button>
+    <textarea id="user-input" rows="1" placeholder="Message Local AI..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
   </footer>
 
   <script>
-    let chatHistory = [];
+    // --- State Management ---
+    let chats = JSON.parse(localStorage.getItem('ai_studio_chats') || '[]');
+    let currentChatId = localStorage.getItem('ai_studio_active_chat') || null;
+    let activeStreamSession = 0;
 
-    // Save/load URL locally in browser
-    document.getElementById('tunnel-url').value = localStorage.getItem('backend_url') || '';
+    // --- Initialize App ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      if (chats.length === 0) {
+        createNewChat(false);
+      } else {
+        if (!chats.find(c => c.id === currentChatId)) {
+          currentChatId = chats[0].id;
+        }
+        renderSidebar();
+        renderCurrentChat();
+      }
+    });
 
-    function getBaseUrl() {
+    // --- UI Drawer Helpers ---
+    function toggleDrawer(side) {
+      closeDrawers();
+      document.getElementById(`${side}-drawer`).classList.add('open');
+      document.getElementById('overlay').classList.add('active');
+    }
+
+    function closeDrawers() {
+      document.getElementById('left-drawer').classList.remove('open');
+      document.getElementById('right-drawer').classList.remove('open');
+      document.getElementById('overlay').classList.remove('active');
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function handleEnter(e) {
+      if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // --- Settings Persistence ---
+    function loadSettings() {
+      document.getElementById('tunnel-url').value = localStorage.getItem('backend_url') || '';
+      document.getElementById('system-prompt').value = localStorage.getItem('cfg_system_prompt') || '';
+      document.getElementById('ctx-size').value = localStorage.getItem('cfg_ctx_size') || '2048';
+      const temp = localStorage.getItem('cfg_temperature') || '0.7';
+      document.getElementById('temperature').value = temp;
+      document.getElementById('temp-val').textContent = temp;
+      document.getElementById('pin-vram').checked = localStorage.getItem('cfg_pin_vram') !== 'false';
+
+      const savedModels = JSON.parse(localStorage.getItem('cached_models') || '[]');
+      const savedModel = localStorage.getItem('cfg_selected_model');
+      if (savedModels.length > 0) populateModelDropdown(savedModels, savedModel);
+    }
+
+    function saveSettings() {
       let url = document.getElementById('tunnel-url').value.trim();
       if (url.endsWith('/')) url = url.slice(0, -1);
       localStorage.setItem('backend_url', url);
-      return url;
+      localStorage.setItem('cfg_system_prompt', document.getElementById('system-prompt').value);
+      localStorage.setItem('cfg_ctx_size', document.getElementById('ctx-size').value);
+      localStorage.setItem('cfg_temperature', document.getElementById('temperature').value);
+      localStorage.setItem('cfg_pin_vram', document.getElementById('pin-vram').checked);
+      localStorage.setItem('cfg_selected_model', document.getElementById('model-select').value);
+    }
+
+    function getBaseUrl() {
+      saveSettings();
+      return localStorage.getItem('backend_url') || '';
+    }
+
+    // --- Chat History Management ---
+    function saveChatsToStorage() {
+      localStorage.setItem('ai_studio_chats', JSON.stringify(chats));
+      localStorage.setItem('ai_studio_active_chat', currentChatId);
+      renderSidebar();
+    }
+
+    function getCurrentChat() {
+      return chats.find(c => c.id === currentChatId);
+    }
+
+    function createNewChat(closeMenu = true) {
+      activeStreamSession++; // Cancel any running stream
+      const newChat = {
+        id: 'chat_' + Date.now(),
+        title: 'New Chat',
+        updatedAt: Date.now(),
+        messages: []
+      };
+      chats.unshift(newChat);
+      currentChatId = newChat.id;
+      saveChatsToStorage();
+      renderCurrentChat();
+      if (closeMenu) closeDrawers();
+    }
+
+    function switchChat(id) {
+      activeStreamSession++;
+      currentChatId = id;
+      saveChatsToStorage();
+      renderCurrentChat();
+      closeDrawers();
+    }
+
+    function deleteChat(id, event) {
+      event.stopPropagation();
+      activeStreamSession++;
+      chats = chats.filter(c => c.id !== id);
+      if (chats.length === 0) {
+        createNewChat(false);
+      } else if (currentChatId === id) {
+        currentChatId = chats[0].id;
+      }
+      saveChatsToStorage();
+      renderCurrentChat();
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('chat-list');
+      list.innerHTML = '';
+      chats.forEach(chat => {
+        const item = document.createElement('div');
+        item.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+        item.onclick = () => switchChat(chat.id);
+
+        const title = document.createElement('div');
+        title.className = 'chat-item-title';
+        title.textContent = chat.title;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-chat-btn';
+        delBtn.textContent = '✕';
+        delBtn.onclick = (e) => deleteChat(chat.id, e);
+
+        item.appendChild(title);
+        item.appendChild(delBtn);
+        list.appendChild(item);
+      });
+    }
+
+    function renderCurrentChat() {
+      const box = document.getElementById('chat-box');
+      box.innerHTML = '';
+      const chat = getCurrentChat();
+      if (!chat) return;
+
+      document.getElementById('current-chat-title').textContent = chat.title;
+
+      if (chat.messages.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'Start a conversation below, or tap ⚙ in the top right to connect your tunnel URL and tweak engine settings.';
+        box.appendChild(empty);
+        return;
+      }
+
+      chat.messages.forEach(msg => {
+        appendBubbleUI(msg.role, msg.content, msg.stats || '');
+      });
+    }
+
+    function appendBubbleUI(role, text, statsText = '') {
+      const box = document.getElementById('chat-box');
+      const empty = box.querySelector('.empty-state');
+      if (empty) empty.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `message-wrapper ${role === 'user' ? 'user' : 'ai'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message';
+      bubble.textContent = text;
+      wrapper.appendChild(bubble);
+
+      let statsEl = null;
+      if (role !== 'user') {
+        statsEl = document.createElement('div');
+        statsEl.className = 'msg-stats';
+        statsEl.textContent = statsText;
+        wrapper.appendChild(statsEl);
+      }
+
+      box.appendChild(wrapper);
+      box.scrollTop = box.scrollHeight;
+      return { bubble, statsEl };
+    }
+
+    // --- Backend Communication ---
+    function populateModelDropdown(modelNames, selected) {
+      const select = document.getElementById('model-select');
+      select.innerHTML = '';
+      modelNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      if (selected && modelNames.includes(selected)) {
+        select.value = selected;
+      }
     }
 
     async function fetchModels() {
       const baseUrl = getBaseUrl();
       if (!baseUrl) return alert('Please enter your backend URL.');
-      
+
       try {
-        // Simple GET request avoids CORS preflight failures on Cloudflare
         const res = await fetch(`${baseUrl}/api/tags`);
         const data = await res.json();
-        const select = document.getElementById('model-select');
-        select.innerHTML = '';
-        data.models.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.name;
-          opt.textContent = m.name;
-          select.appendChild(opt);
-        });
-        alert('Connected successfully! Models loaded.');
+        const names = data.models.map(m => m.name);
+        localStorage.setItem('cached_models', JSON.stringify(names));
+        populateModelDropdown(names, localStorage.getItem('cfg_selected_model'));
+        saveSettings();
+        alert('Connected! Loaded ' + names.length + ' models.');
+        closeDrawers();
       } catch (err) {
         alert('Could not reach Ollama backend: ' + err.message);
       }
@@ -84,45 +622,79 @@
       const text = input.value.trim();
       const baseUrl = getBaseUrl();
       const model = document.getElementById('model-select').value;
-      if (!text || !baseUrl) return;
 
-      appendBubble('user', text);
-      chatHistory.push({ role: 'user', content: text });
+      if (!text) return;
+      if (!baseUrl) {
+        toggleDrawer('right');
+        return alert('Please enter your Cloudflare Tunnel URL in Settings first.');
+      }
+
+      const chat = getCurrentChat();
+      if (!chat) return;
+
+      // Auto-title chat on first message
+      if (chat.messages.length === 0) {
+        chat.title = text.slice(0, 28) + (text.length > 28 ? '...' : '');
+        document.getElementById('current-chat-title').textContent = chat.title;
+      }
+
+      chat.messages.push({ role: 'user', content: text });
+      chat.updatedAt = Date.now();
+      saveChatsToStorage();
+
+      appendBubbleUI('user', text);
       input.value = '';
+      input.style.height = 'auto';
 
-      const aiBubble = appendBubble('ai', '...');
+      const { bubble: aiBubble, statsEl } = appendBubbleUI('assistant', '...', 'Generating...');
       aiBubble.textContent = '';
 
+      // Build payload with optional System Prompt & Engine Settings
+      const systemPrompt = document.getElementById('system-prompt').value.trim();
+      const payloadMessages = [];
+      if (systemPrompt) {
+        payloadMessages.push({ role: 'system', content: systemPrompt });
+      }
+      chat.messages.forEach(m => {
+        payloadMessages.push({ role: m.role, content: m.content });
+      });
+
+      const ctxSize = parseInt(document.getElementById('ctx-size').value) || 2048;
+      const temp = parseFloat(document.getElementById('temperature').value) || 0.7;
+      const pinVram = document.getElementById('pin-vram').checked;
+
+      const sessionId = ++activeStreamSession;
+      const startTime = performance.now();
+      let tokenCount = 0;
+
       try {
-        // Use text/plain to avoid triggering a browser CORS OPTIONS preflight
         const response = await fetch(`${baseUrl}/api/chat`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'text/plain'
-          },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             model: model,
-            messages: chatHistory,
-            stream: true
+            messages: payloadMessages,
+            stream: true,
+            options: {
+              num_ctx: ctxSize,
+              temperature: temp
+            },
+            keep_alive: pinVram ? -1 : 300
           })
         });
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let fullResponse = '';
-        let buffer = ''; // Holds incomplete JSON fragments across network chunks
+        let buffer = '';
+        let finalStats = '';
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          
-          // Append new chunk to the buffer
+          if (done || sessionId !== activeStreamSession) break;
+
           buffer += decoder.decode(value, { stream: true });
-          
-          // Split by newline
           const lines = buffer.split('\n');
-          
-          // Keep the last item in the buffer (it might be an incomplete line)
           buffer = lines.pop();
 
           for (const line of lines) {
@@ -131,40 +703,39 @@
               const parsed = JSON.parse(line);
               if (parsed.message && parsed.message.content) {
                 fullResponse += parsed.message.content;
+                tokenCount++;
                 aiBubble.textContent = fullResponse;
+
+                // Live t/s estimate while streaming
+                const elapsedSec = (performance.now() - startTime) / 1000;
+                if (elapsedSec > 0.2) {
+                  statsEl.textContent = `${(tokenCount / elapsedSec).toFixed(1)} t/s`;
+                }
                 document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
               }
-            } catch (e) {
-              console.warn('Skipped malformed line:', line);
-            }
+
+              // Exact t/s calculation from Ollama hardware metrics on completion
+              if (parsed.done && parsed.eval_count && parsed.eval_duration) {
+                const exactTps = parsed.eval_count / (parsed.eval_duration / 1e9);
+                finalStats = `${exactTps.toFixed(1)} t/s • ${parsed.eval_count} tokens`;
+                statsEl.textContent = finalStats;
+              }
+            } catch (e) {}
           }
         }
 
-        // Parse any remaining data in the buffer when stream ends
-        if (buffer.trim()) {
-          try {
-            const parsed = JSON.parse(buffer);
-            if (parsed.message && parsed.message.content) {
-              fullResponse += parsed.message.content;
-              aiBubble.textContent = fullResponse;
-            }
-          } catch (e) {}
+        if (sessionId === activeStreamSession) {
+          chat.messages.push({
+            role: 'assistant',
+            content: fullResponse,
+            stats: finalStats || statsEl.textContent
+          });
+          saveChatsToStorage();
         }
-
-        chatHistory.push({ role: 'assistant', content: fullResponse });
       } catch (err) {
         aiBubble.textContent = 'Error: ' + err.message;
+        statsEl.textContent = 'Failed';
       }
-    }
-
-    function appendBubble(role, text) {
-      const box = document.getElementById('chat-box');
-      const div = document.createElement('div');
-      div.className = `message ${role}`;
-      div.textContent = text;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-      return div;
     }
   </script>
 </body>
