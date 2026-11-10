@@ -62,9 +62,8 @@
       if (!baseUrl) return alert('Please enter your backend URL.');
       
       try {
-        const res = await fetch(`${baseUrl}/api/tags`, {
-          headers: { 'ngrok-skip-browser-warning': 'true' }
-        });
+        // Simple GET request avoids CORS preflight failures on Cloudflare
+        const res = await fetch(`${baseUrl}/api/tags`);
         const data = await res.json();
         const select = document.getElementById('model-select');
         select.innerHTML = '';
@@ -95,11 +94,11 @@
       aiBubble.textContent = '';
 
       try {
+        // Use text/plain to avoid triggering a browser CORS OPTIONS preflight
         const response = await fetch(`${baseUrl}/api/chat`, {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
+            'Content-Type': 'text/plain'
           },
           body: JSON.stringify({
             model: model,
