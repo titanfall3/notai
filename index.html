@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Local AI Studio Pro</title>
+  <title>Local AI Studio</title>
 
   <!-- Marked (Markdown Parser) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -29,7 +29,7 @@
       --text: #e6e6f0;
       --text-muted: #8c8ca0;
       --danger: #e54d42;
-      --success: #2ecc71;
+      --warning: #f39c12;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -44,6 +44,30 @@
       overflow: hidden;
     }
 
+    /* --- Lock Screen Screen Modal --- */
+    #lock-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 12, 16, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .lock-modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 28px 22px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
     /* --- Navigation Bar --- */
     header {
       background: var(--bg-header);
@@ -55,7 +79,6 @@
       border-bottom: 1px solid var(--border);
       z-index: 10;
     }
-
     .icon-btn {
       background: #20202e;
       color: var(--text);
@@ -68,7 +91,6 @@
       justify-content: center;
       font-size: 18px;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
     }
     .icon-btn:active { transform: scale(0.95); }
 
@@ -145,7 +167,7 @@
       gap: 12px;
     }
 
-    /* --- History Items & Drawer Actions --- */
+    /* --- History Items --- */
     .new-chat-btn {
       background: var(--bg-user);
       color: #fff;
@@ -204,22 +226,23 @@
       text-align: center;
     }
 
-    /* --- Settings Controls --- */
+    /* --- Form Controls --- */
     .field-group { display: flex; flex-direction: column; gap: 6px; }
     .field-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; }
-    input[type="text"], select, textarea {
+    input[type="text"], input[type="password"], select, textarea {
       width: 100%;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: #0f0f16;
       color: var(--text);
       padding: 10px 12px;
-      font-size: 16px; /* Prevents auto-zoom on iOS */
+      font-size: 16px;
       outline: none;
     }
     textarea { resize: vertical; min-height: 80px; font-family: inherit; }
     input[type="range"] { width: 100%; accent-color: var(--bg-user); }
-    .connect-btn {
+
+    .btn-primary {
       background: var(--bg-user);
       color: #fff;
       border: none;
@@ -228,8 +251,17 @@
       font-weight: 600;
       cursor: pointer;
     }
+    .btn-secondary {
+      background: #20202e;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
 
-    /* --- Chat Display & Markdown --- */
+    /* --- Message Display --- */
     #chat-box {
       flex-grow: 1;
       overflow-y: auto;
@@ -257,7 +289,6 @@
     .user .message { background: var(--bg-user); color: #fff; border-bottom-right-radius: 4px; }
     .ai .message { background: var(--bg-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 
-    /* Markdown Elements Inside AI Bubble */
     .ai .message p { margin-bottom: 8px; }
     .ai .message p:last-child { margin-bottom: 0; }
     .ai .message ul, .ai .message ol { margin-left: 20px; margin-bottom: 8px; }
@@ -265,7 +296,7 @@
     .ai .message th, .ai .message td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
     .ai .message th { background: #252535; }
 
-    /* Code Blocks with Copy Header */
+    /* Code Blocks */
     .code-container {
       position: relative;
       margin: 10px 0;
@@ -297,7 +328,7 @@
     /* DeepSeek-R1 <think> Accordion */
     .think-accordion {
       background: rgba(255, 255, 255, 0.04);
-      border-left: 3px solid #f39c12;
+      border-left: 3px solid var(--warning);
       border-radius: 6px;
       margin-bottom: 10px;
       overflow: hidden;
@@ -306,7 +337,7 @@
       padding: 8px 12px;
       font-size: 12px;
       font-weight: 600;
-      color: #f39c12;
+      color: var(--warning);
       cursor: pointer;
       user-select: none;
     }
@@ -326,8 +357,6 @@
       margin-top: 5px;
       padding: 0 4px;
     }
-
-    /* Thumbnail display inside user message */
     .msg-attachment-img {
       max-width: 180px;
       max-height: 180px;
@@ -336,7 +365,7 @@
       display: block;
     }
 
-    /* --- File Attachment Tray --- */
+    /* Attachment Tray */
     #attachment-tray {
       display: none;
       padding: 6px 14px;
@@ -358,7 +387,7 @@
     }
     .chip-del { color: var(--danger); cursor: pointer; font-weight: bold; }
 
-    /* --- Bottom Input Deck --- */
+    /* Bottom Input Bar */
     footer {
       padding: 8px 10px;
       padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -377,7 +406,6 @@
       line-height: 1.35;
       resize: none;
     }
-
     .footer-btn {
       background: #20202e;
       color: var(--text);
@@ -398,17 +426,23 @@
     }
     @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
 
-    #send-btn {
-      background: var(--bg-user);
-      color: #fff;
-      border: none;
-    }
-    #send-btn.stop-mode {
-      background: var(--danger);
-    }
+    #send-btn { background: var(--bg-user); color: #fff; border: none; }
+    #send-btn.stop-mode { background: var(--danger); }
   </style>
 </head>
 <body>
+
+  <!-- Full-Screen Password Gate -->
+  <div id="lock-screen">
+    <div class="lock-modal">
+      <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
+      <h2 style="font-size: 18px; margin-bottom: 6px;">Local AI Studio</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Enter password to unlock interface</p>
+      <input type="password" id="gate-pass-input" placeholder="Password..." onkeydown="if(event.key==='Enter') checkGatePassword()">
+      <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="checkGatePassword()">Unlock</button>
+      <div id="gate-error" style="color: var(--danger); font-size: 12px; margin-top: 10px; display: none;">Incorrect password</div>
+    </div>
+  </div>
 
   <!-- Drawers Overlay -->
   <div id="overlay" class="overlay" onclick="closeDrawers()"></div>
@@ -423,29 +457,29 @@
       <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
       <div id="chat-list" class="chat-list"></div>
       <div class="drawer-actions">
-        <button class="action-btn" onclick="exportCurrentChat()">Export Chat</button>
-        <button class="action-btn" onclick="document.getElementById('import-file').click()">Import Chat</button>
+        <button class="action-btn" onclick="exportCurrentChat()">Export</button>
+        <button class="action-btn" onclick="document.getElementById('import-file').click()">Import</button>
         <input type="file" id="import-file" style="display:none" accept=".json" onchange="importChat(this)">
       </div>
     </div>
   </aside>
 
-  <!-- Right Drawer: System & Engine Config -->
+  <!-- Right Drawer: Engine & Security Settings -->
   <aside id="right-drawer" class="drawer right">
     <div class="drawer-header">
-      <span>Engine Settings</span>
+      <span>Settings</span>
       <button class="icon-btn" style="width:30px;height:30px;font-size:13px;" onclick="closeDrawers()">✕</button>
     </div>
     <div class="drawer-body">
       <div class="field-group">
         <label class="field-label">Cloudflare Tunnel URL</label>
         <input type="text" id="tunnel-url" placeholder="https://xxxx.trycloudflare.com" onchange="saveSettings()">
-        <button class="connect-btn" onclick="fetchModels()">Connect & Refresh Models</button>
+        <button class="btn-primary" onclick="fetchModels()">Connect & Refresh Models</button>
       </div>
 
       <div class="field-group">
         <label class="field-label">System Prompt</label>
-        <textarea id="system-prompt" placeholder="Persona or custom system rules..." onchange="saveSettings()"></textarea>
+        <textarea id="system-prompt" placeholder="Persona or rules..." onchange="saveSettings()"></textarea>
       </div>
 
       <div class="field-group">
@@ -469,6 +503,10 @@
         <span style="font-size:14px;">Pin Model to VRAM</span>
         <input type="checkbox" id="pin-vram" checked onchange="saveSettings()" style="width:18px;height:18px;accent-color:var(--bg-user);">
       </div>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 6px 0;">
+
+      <button class="btn-secondary" onclick="lockInterface()">🔒 Lock App Now</button>
     </div>
   </aside>
 
@@ -484,7 +522,7 @@
     <button class="icon-btn" onclick="toggleDrawer('right')" title="Settings">⚙</button>
   </header>
 
-  <!-- Main Chat Feed -->
+  <!-- Chat Area -->
   <main id="chat-box"></main>
 
   <!-- Attachment Tray -->
@@ -503,16 +541,19 @@
   </footer>
 
   <script>
-    // --- Application State ---
+    // --- Configure Your Web Access Password Here ---
+    const APP_GATE_PASSWORD = "MySecretPassword123";
+
+    // --- State Management ---
     let chats = JSON.parse(localStorage.getItem('ai_studio_chats') || '[]');
     let currentChatId = localStorage.getItem('ai_studio_active_chat') || null;
-    let pendingAttachments = []; // { name, type, content, isImage }
+    let pendingAttachments = [];
     let abortController = null;
     let isGenerating = false;
     let recognition = null;
     let isRecording = false;
 
-    // --- Configure Markdown Engine ---
+    // --- Markdown Configuration ---
     marked.setOptions({
       highlight: function(code, lang) {
         if (lang && hljs.getLanguage(lang)) {
@@ -523,8 +564,37 @@
       breaks: true
     });
 
-    // --- Initialization ---
+    // --- Gate Security Logic ---
+    function checkGateAuth() {
+      if (sessionStorage.getItem('studio_unlocked') === 'true') {
+        const screen = document.getElementById('lock-screen');
+        if (screen) screen.style.display = 'none';
+      }
+    }
+
+    function checkGatePassword() {
+      const input = document.getElementById('gate-pass-input');
+      const err = document.getElementById('gate-error');
+      if (input.value === APP_GATE_PASSWORD) {
+        sessionStorage.setItem('studio_unlocked', 'true');
+        document.getElementById('lock-screen').style.display = 'none';
+        err.style.display = 'none';
+      } else {
+        err.style.display = 'block';
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function lockInterface() {
+      sessionStorage.removeItem('studio_unlocked');
+      document.getElementById('lock-screen').style.display = 'flex';
+      closeDrawers();
+    }
+
+    // --- Lifecycle Initialization ---
     window.addEventListener('DOMContentLoaded', () => {
+      checkGateAuth();
       loadSettings();
       if (chats.length === 0) {
         createNewChat(false);
@@ -536,7 +606,7 @@
       initSpeechRecognition();
     });
 
-    // --- Drawer Controls ---
+    // --- Drawers ---
     function toggleDrawer(side) {
       closeDrawers();
       document.getElementById(`${side}-drawer`).classList.add('open');
@@ -655,7 +725,6 @@
       let content = rawText;
       let thinkHtml = '';
 
-      // Check for <think> reasoning tags
       if (content.includes('<think>')) {
         if (content.includes('</think>')) {
           const parts = content.split('</think>');
@@ -668,7 +737,6 @@
             </details>
           `;
         } else {
-          // Still streaming inside the think phase
           const thinkText = content.replace('<think>', '').trim();
           return `
             <details class="think-accordion" open>
@@ -679,8 +747,7 @@
         }
       }
 
-      const parsedMarkdown = marked.parse(content || '');
-      return thinkHtml + parsedMarkdown;
+      return thinkHtml + marked.parse(content || '');
     }
 
     function escapeHtml(str) {
@@ -714,7 +781,7 @@
       });
     }
 
-    // --- Render Messages UI ---
+    // --- Message UI Rendering ---
     function renderCurrentChat() {
       const box = document.getElementById('chat-box');
       box.innerHTML = '';
@@ -724,7 +791,7 @@
       document.getElementById('current-chat-title').textContent = chat.title;
 
       if (chat.messages.length === 0) {
-        box.innerHTML = '<div style="margin:auto;text-align:center;color:var(--text-muted);font-size:14px;max-width:260px;line-height:1.5;">Tap ⚙ in top right to connect your Cloudflare URL. Model, voice, and vision are ready.</div>';
+        box.innerHTML = '<div style="margin:auto;text-align:center;color:var(--text-muted);font-size:14px;max-width:260px;line-height:1.5;">Tap ⚙ to connect your Cloudflare URL. Model, voice, and vision are ready.</div>';
         return;
       }
 
@@ -775,7 +842,7 @@
       return { bubble, statsEl };
     }
 
-    // --- File Attachment Handler (Vision & Text) ---
+    // --- Attachments (Vision & Document Extraction) ---
     async function handleFileSelection(input) {
       const files = Array.from(input.files);
       if (!files.length) return;
@@ -844,7 +911,7 @@
       renderAttachmentTray();
     }
 
-    // --- Web Speech API (Voice Dictation) ---
+    // --- Voice Dictation ---
     function initSpeechRecognition() {
       const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!Speech) {
@@ -871,24 +938,18 @@
 
     function toggleVoiceInput() {
       if (!recognition) return alert('Speech recognition not supported on this browser.');
-      if (isRecording) {
-        recognition.stop();
-      } else {
-        recognition.start();
-      }
+      if (isRecording) recognition.stop();
+      else recognition.start();
     }
     function stopRecording() {
       isRecording = false;
       document.getElementById('mic-btn').classList.remove('recording');
     }
 
-    // --- Generation & Abort Flow ---
+    // --- Execution & Streaming Flow ---
     function handleSendOrAbort() {
-      if (isGenerating) {
-        abortGeneration();
-      } else {
-        sendMessage();
-      }
+      if (isGenerating) abortGeneration();
+      else sendMessage();
     }
 
     function abortGeneration() {
@@ -911,7 +972,6 @@
       }
     }
 
-    // --- Models Fetch ---
     function populateModelDropdown(names, selected) {
       const sel = document.getElementById('model-select');
       sel.innerHTML = '';
@@ -941,7 +1001,6 @@
       }
     }
 
-    // --- Chat Request Pipeline ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
@@ -957,27 +1016,21 @@
       const chat = getCurrentChat();
       if (!chat) return;
 
-      // Extract vision images & text document injection
       const imagesPayload = [];
       let docContext = '';
 
       pendingAttachments.forEach(att => {
-        if (att.isImage) {
-          imagesPayload.push(att.content);
-        } else {
-          docContext += `\n[File Attachment: ${att.name}]\n${att.content}\n`;
-        }
+        if (att.isImage) imagesPayload.push(att.content);
+        else docContext += `\n[File Attachment: ${att.name}]\n${att.content}\n`;
       });
 
       const fullUserPrompt = docContext ? `${docContext}\nUser: ${text}` : text;
 
-      // Update chat title if first message
       if (chat.messages.length === 0) {
         chat.title = (text || pendingAttachments[0]?.name || 'Chat').slice(0, 26);
         document.getElementById('current-chat-title').textContent = chat.title;
       }
 
-      // Record to history
       const userMsgObj = {
         role: 'user',
         content: text,
@@ -989,7 +1042,6 @@
 
       appendBubbleUI('user', text, '', imagesPayload);
 
-      // Clear input & attachments
       input.value = '';
       input.style.height = 'auto';
       pendingAttachments = [];
@@ -999,7 +1051,6 @@
       aiBubble.textContent = '';
       setGeneratingUI(true);
 
-      // Construct Ollama payload
       const systemPrompt = document.getElementById('system-prompt').value.trim();
       const payloadMessages = [];
       if (systemPrompt) payloadMessages.push({ role: 'system', content: systemPrompt });
@@ -1010,7 +1061,6 @@
         payloadMessages.push(item);
       });
 
-      // Point the last user message to include injected RAG file text
       if (docContext) {
         payloadMessages[payloadMessages.length - 1].content = fullUserPrompt;
       }
@@ -1027,6 +1077,7 @@
       let finalStats = '';
 
       try {
+        // Use text/plain to bypass strict mobile browser CORS preflights
         const response = await fetch(`${baseUrl}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
@@ -1049,7 +1100,7 @@
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
-          buffer = lines.pop();
+          buffer = lines.pop(); // Preserve split fragments
 
           for (const line of lines) {
             if (!line.trim()) continue;
@@ -1102,7 +1153,7 @@
       }
     }
 
-    // --- Export / Import ---
+    // --- Backup & Restore ---
     function exportCurrentChat() {
       const chat = getCurrentChat();
       if (!chat) return;
@@ -1128,10 +1179,10 @@
             renderCurrentChat();
             closeDrawers();
           } else {
-            alert('Invalid chat file format.');
+            alert('Invalid chat format.');
           }
         } catch (err) {
-          alert('Failed to parse JSON file.');
+          alert('Failed to parse JSON.');
         }
       };
       reader.readAsText(file);
