@@ -3,24 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Local AI Studio Mobile</title>
+  <title>Local AI Studio Pro</title>
+
+  <!-- Marked (Markdown Parser) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Highlight.js (Code Syntax Highlighting) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- PDF.js (Client-side PDF Text Extraction) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
   <style>
     :root {
-      --bg-main: #0e0e12;
-      --bg-panel: #161620;
-      --bg-header: rgba(26, 26, 36, 0.9);
-      --bg-ai: #1e1e2a;
+      --bg-main: #0c0c10;
+      --bg-panel: #161622;
+      --bg-header: rgba(22, 22, 34, 0.92);
+      --bg-ai: #1b1b26;
       --bg-user: #007acc;
-      --border: #2b2b38;
+      --border: #282838;
       --text: #e6e6f0;
-      --text-muted: #8a8a9e;
-      --danger: #d93838;
+      --text-muted: #8c8ca0;
+      --danger: #e54d42;
+      --success: #2ecc71;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg-main);
       color: var(--text);
       display: flex;
@@ -29,10 +44,10 @@
       overflow: hidden;
     }
 
-    /* --- Top Navigation Bar --- */
+    /* --- Navigation Bar --- */
     header {
       background: var(--bg-header);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
       padding: 10px 14px;
       display: flex;
       align-items: center;
@@ -42,7 +57,7 @@
     }
 
     .icon-btn {
-      background: #222230;
+      background: #20202e;
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -53,6 +68,7 @@
       justify-content: center;
       font-size: 18px;
       cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
     }
     .icon-btn:active { transform: scale(0.95); }
 
@@ -60,7 +76,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      max-width: 65%;
+      max-width: 60%;
     }
     .header-title {
       font-size: 14px;
@@ -76,17 +92,17 @@
       border: none;
       font-size: 13px;
       font-weight: 600;
-      text-align: center;
       outline: none;
       cursor: pointer;
+      text-align: center;
     }
     #model-select option { background: var(--bg-panel); color: var(--text); }
 
-    /* --- Slide-Out Drawers (History & Settings) --- */
+    /* --- Drawers --- */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.65);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
@@ -98,8 +114,8 @@
       position: fixed;
       top: 0;
       bottom: 0;
-      width: 285px;
-      max-width: 82vw;
+      width: 300px;
+      max-width: 85vw;
       background: var(--bg-panel);
       z-index: 30;
       display: flex;
@@ -120,7 +136,6 @@
       justify-content: space-between;
       align-items: center;
     }
-
     .drawer-body {
       padding: 14px;
       overflow-y: auto;
@@ -130,7 +145,7 @@
       gap: 12px;
     }
 
-    /* --- History Sidebar Items --- */
+    /* --- History Items & Drawer Actions --- */
     .new-chat-btn {
       background: var(--bg-user);
       color: #fff;
@@ -140,14 +155,8 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      width: 100%;
     }
-
-    .chat-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .chat-list { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
     .chat-item {
       display: flex;
       align-items: center;
@@ -158,10 +167,7 @@
       border: 1px solid transparent;
       cursor: pointer;
     }
-    .chat-item.active {
-      background: rgba(0, 122, 204, 0.18);
-      border-color: var(--bg-user);
-    }
+    .chat-item.active { background: rgba(0, 122, 204, 0.18); border-color: var(--bg-user); }
     .chat-item-title {
       font-size: 14px;
       white-space: nowrap;
@@ -170,16 +176,33 @@
       flex-grow: 1;
       margin-right: 8px;
     }
-    .delete-chat-btn {
+    .del-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 15px;
-      padding: 4px 6px;
-      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
+      padding: 4px;
     }
-    .delete-chat-btn:hover { color: var(--danger); }
+    .del-btn:hover { color: var(--danger); }
+
+    .drawer-actions {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      flex: 1;
+      background: #20202e;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
 
     /* --- Settings Controls --- */
     .field-group { display: flex; flex-direction: column; gap: 6px; }
@@ -188,102 +211,163 @@
       width: 100%;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: #101018;
+      background: #0f0f16;
       color: var(--text);
       padding: 10px 12px;
-      font-size: 16px; /* Prevents iOS auto-zoom */
+      font-size: 16px; /* Prevents auto-zoom on iOS */
       outline: none;
     }
     textarea { resize: vertical; min-height: 80px; font-family: inherit; }
     input[type="range"] { width: 100%; accent-color: var(--bg-user); }
-
     .connect-btn {
       background: var(--bg-user);
       color: #fff;
       border: none;
       border-radius: 10px;
-      padding: 10px;
-      font-size: 14px;
+      padding: 11px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 4px;
     }
 
-    .switch-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      font-size: 14px;
-    }
-
-    /* --- Chat Message Feed --- */
+    /* --- Chat Display & Markdown --- */
     #chat-box {
       flex-grow: 1;
       overflow-y: auto;
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
       scroll-behavior: smooth;
     }
-
     .message-wrapper {
       display: flex;
       flex-direction: column;
-      max-width: 85%;
+      max-width: 88%;
     }
     .message-wrapper.user { align-self: flex-end; align-items: flex-end; }
     .message-wrapper.ai { align-self: flex-start; align-items: flex-start; }
 
     .message {
-      padding: 11px 15px;
+      padding: 12px 16px;
       border-radius: 16px;
-      line-height: 1.5;
+      line-height: 1.55;
       font-size: 15px;
       word-break: break-word;
+    }
+    .user .message { background: var(--bg-user); color: #fff; border-bottom-right-radius: 4px; }
+    .ai .message { background: var(--bg-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+
+    /* Markdown Elements Inside AI Bubble */
+    .ai .message p { margin-bottom: 8px; }
+    .ai .message p:last-child { margin-bottom: 0; }
+    .ai .message ul, .ai .message ol { margin-left: 20px; margin-bottom: 8px; }
+    .ai .message table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+    .ai .message th, .ai .message td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+    .ai .message th { background: #252535; }
+
+    /* Code Blocks with Copy Header */
+    .code-container {
+      position: relative;
+      margin: 10px 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #181824;
+      border: 1px solid #303042;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 10px;
+      background: #20202e;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-muted);
+    }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: #4da6ff;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .code-container pre { margin: 0; padding: 10px; overflow-x: auto; font-size: 13px; }
+
+    /* DeepSeek-R1 <think> Accordion */
+    .think-accordion {
+      background: rgba(255, 255, 255, 0.04);
+      border-left: 3px solid #f39c12;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .think-accordion summary {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #f39c12;
+      cursor: pointer;
+      user-select: none;
+    }
+    .think-body {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #a0a0b2;
+      font-style: italic;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       white-space: pre-wrap;
-    }
-    .user .message {
-      background: var(--bg-user);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-    .ai .message {
-      background: var(--bg-ai);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
     }
 
     .msg-stats {
       font-size: 11px;
       font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 5px;
       padding: 0 4px;
     }
 
-    .empty-state {
-      margin: auto;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 14px;
-      max-width: 260px;
-      line-height: 1.5;
+    /* Thumbnail display inside user message */
+    .msg-attachment-img {
+      max-width: 180px;
+      max-height: 180px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: block;
     }
 
-    /* --- Bottom Input Bar --- */
+    /* --- File Attachment Tray --- */
+    #attachment-tray {
+      display: none;
+      padding: 6px 14px;
+      background: #12121a;
+      border-top: 1px solid var(--border);
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .tray-chip {
+      background: #20202e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip-del { color: var(--danger); cursor: pointer; font-weight: bold; }
+
+    /* --- Bottom Input Deck --- */
     footer {
-      padding: 10px 12px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      padding: 8px 10px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
       background: var(--bg-panel);
       border-top: 1px solid var(--border);
       display: flex;
       gap: 8px;
       align-items: flex-end;
     }
-
     #user-input {
       flex-grow: 1;
       border-radius: 20px;
@@ -294,63 +378,81 @@
       resize: none;
     }
 
-    .send-btn {
-      background: var(--bg-user);
-      color: #fff;
-      border: none;
+    .footer-btn {
+      background: #20202e;
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 50%;
       width: 42px;
       height: 42px;
       font-size: 17px;
-      font-weight: bold;
       cursor: pointer;
-      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
+    }
+    .footer-btn.recording {
+      background: var(--danger);
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+    #send-btn {
+      background: var(--bg-user);
+      color: #fff;
+      border: none;
+    }
+    #send-btn.stop-mode {
+      background: var(--danger);
     }
   </style>
 </head>
 <body>
 
-  <!-- Dark Backdrop for Mobile Drawers -->
+  <!-- Drawers Overlay -->
   <div id="overlay" class="overlay" onclick="closeDrawers()"></div>
 
-  <!-- Left Drawer: Saved Chat History -->
+  <!-- Left Drawer: History & Exports -->
   <aside id="left-drawer" class="drawer left">
     <div class="drawer-header">
       <span>Saved Convos</span>
-      <button class="icon-btn" style="width:32px;height:32px;font-size:14px;" onclick="closeDrawers()">✕</button>
+      <button class="icon-btn" style="width:30px;height:30px;font-size:13px;" onclick="closeDrawers()">✕</button>
     </div>
     <div class="drawer-body">
       <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
       <div id="chat-list" class="chat-list"></div>
+      <div class="drawer-actions">
+        <button class="action-btn" onclick="exportCurrentChat()">Export Chat</button>
+        <button class="action-btn" onclick="document.getElementById('import-file').click()">Import Chat</button>
+        <input type="file" id="import-file" style="display:none" accept=".json" onchange="importChat(this)">
+      </div>
     </div>
   </aside>
 
-  <!-- Right Drawer: Engine & System Prompt Settings -->
+  <!-- Right Drawer: System & Engine Config -->
   <aside id="right-drawer" class="drawer right">
     <div class="drawer-header">
       <span>Engine Settings</span>
-      <button class="icon-btn" style="width:32px;height:32px;font-size:14px;" onclick="closeDrawers()">✕</button>
+      <button class="icon-btn" style="width:30px;height:30px;font-size:13px;" onclick="closeDrawers()">✕</button>
     </div>
     <div class="drawer-body">
       <div class="field-group">
-        <label class="field-label">Backend Tunnel URL</label>
+        <label class="field-label">Cloudflare Tunnel URL</label>
         <input type="text" id="tunnel-url" placeholder="https://xxxx.trycloudflare.com" onchange="saveSettings()">
-        <button class="connect-btn" onclick="fetchModels()">Connect & Load Models</button>
+        <button class="connect-btn" onclick="fetchModels()">Connect & Refresh Models</button>
       </div>
 
       <div class="field-group">
-        <label class="field-label">System Prompt (Persona / Rules)</label>
-        <textarea id="system-prompt" placeholder="You are a helpful AI assistant..." onchange="saveSettings()"></textarea>
+        <label class="field-label">System Prompt</label>
+        <textarea id="system-prompt" placeholder="Persona or custom system rules..." onchange="saveSettings()"></textarea>
       </div>
 
       <div class="field-group">
         <label class="field-label">Context Length (Tokens)</label>
         <select id="ctx-size" onchange="saveSettings()">
-          <option value="2048">2048 (Fast / Low VRAM)</option>
-          <option value="4096">4096 (Balanced)</option>
+          <option value="2048">2048</option>
+          <option value="4096">4096 (DeepSeek-R1 Recommended)</option>
           <option value="8192">8192 (Long Memory)</option>
         </select>
       </div>
@@ -363,16 +465,16 @@
         <input type="range" id="temperature" min="0" max="1.5" step="0.1" value="0.7" oninput="document.getElementById('temp-val').textContent = this.value; saveSettings()">
       </div>
 
-      <div class="switch-row">
-        <span>Pin Model in VRAM</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+        <span style="font-size:14px;">Pin Model to VRAM</span>
         <input type="checkbox" id="pin-vram" checked onchange="saveSettings()" style="width:18px;height:18px;accent-color:var(--bg-user);">
       </div>
     </div>
   </aside>
 
-  <!-- Top Header -->
+  <!-- Navigation Bar -->
   <header>
-    <button class="icon-btn" onclick="toggleDrawer('left')" title="Saved Chats">☰</button>
+    <button class="icon-btn" onclick="toggleDrawer('left')" title="Chats">☰</button>
     <div class="header-center">
       <div id="current-chat-title" class="header-title">New Chat</div>
       <select id="model-select" onchange="saveSettings()">
@@ -382,42 +484,64 @@
     <button class="icon-btn" onclick="toggleDrawer('right')" title="Settings">⚙</button>
   </header>
 
-  <!-- Main Chat Container -->
+  <!-- Main Chat Feed -->
   <main id="chat-box"></main>
+
+  <!-- Attachment Tray -->
+  <div id="attachment-tray"></div>
 
   <!-- Bottom Input Bar -->
   <footer>
-    <textarea id="user-input" rows="1" placeholder="Message Local AI..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
-    <button class="send-btn" onclick="sendMessage()">➤</button>
+    <button class="footer-btn" onclick="document.getElementById('file-input').click()" title="Attach File/Image">📎</button>
+    <input type="file" id="file-input" style="display:none;" multiple accept="image/*,.txt,.py,.js,.json,.pdf" onchange="handleFileSelection(this)">
+
+    <button id="mic-btn" class="footer-btn" onclick="toggleVoiceInput()" title="Voice Dictation">🎤</button>
+
+    <textarea id="user-input" rows="1" placeholder="Message local AI..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
+
+    <button id="send-btn" class="footer-btn" onclick="handleSendOrAbort()">➤</button>
   </footer>
 
   <script>
-    // --- State Management ---
+    // --- Application State ---
     let chats = JSON.parse(localStorage.getItem('ai_studio_chats') || '[]');
     let currentChatId = localStorage.getItem('ai_studio_active_chat') || null;
-    let activeStreamSession = 0;
+    let pendingAttachments = []; // { name, type, content, isImage }
+    let abortController = null;
+    let isGenerating = false;
+    let recognition = null;
+    let isRecording = false;
 
-    // --- Initialize App ---
+    // --- Configure Markdown Engine ---
+    marked.setOptions({
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      },
+      breaks: true
+    });
+
+    // --- Initialization ---
     window.addEventListener('DOMContentLoaded', () => {
       loadSettings();
       if (chats.length === 0) {
         createNewChat(false);
       } else {
-        if (!chats.find(c => c.id === currentChatId)) {
-          currentChatId = chats[0].id;
-        }
+        if (!chats.find(c => c.id === currentChatId)) currentChatId = chats[0].id;
         renderSidebar();
         renderCurrentChat();
       }
+      initSpeechRecognition();
     });
 
-    // --- UI Drawer Helpers ---
+    // --- Drawer Controls ---
     function toggleDrawer(side) {
       closeDrawers();
       document.getElementById(`${side}-drawer`).classList.add('open');
       document.getElementById('overlay').classList.add('active');
     }
-
     function closeDrawers() {
       document.getElementById('left-drawer').classList.remove('open');
       document.getElementById('right-drawer').classList.remove('open');
@@ -428,11 +552,10 @@
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
-
     function handleEnter(e) {
       if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
         e.preventDefault();
-        sendMessage();
+        handleSendOrAbort();
       }
     }
 
@@ -440,15 +563,15 @@
     function loadSettings() {
       document.getElementById('tunnel-url').value = localStorage.getItem('backend_url') || '';
       document.getElementById('system-prompt').value = localStorage.getItem('cfg_system_prompt') || '';
-      document.getElementById('ctx-size').value = localStorage.getItem('cfg_ctx_size') || '2048';
+      document.getElementById('ctx-size').value = localStorage.getItem('cfg_ctx_size') || '4096';
       const temp = localStorage.getItem('cfg_temperature') || '0.7';
       document.getElementById('temperature').value = temp;
       document.getElementById('temp-val').textContent = temp;
       document.getElementById('pin-vram').checked = localStorage.getItem('cfg_pin_vram') !== 'false';
 
-      const savedModels = JSON.parse(localStorage.getItem('cached_models') || '[]');
-      const savedModel = localStorage.getItem('cfg_selected_model');
-      if (savedModels.length > 0) populateModelDropdown(savedModels, savedModel);
+      const cached = JSON.parse(localStorage.getItem('cached_models') || '[]');
+      const saved = localStorage.getItem('cfg_selected_model');
+      if (cached.length > 0) populateModelDropdown(cached, saved);
     }
 
     function saveSettings() {
@@ -461,25 +584,18 @@
       localStorage.setItem('cfg_pin_vram', document.getElementById('pin-vram').checked);
       localStorage.setItem('cfg_selected_model', document.getElementById('model-select').value);
     }
+    function getBaseUrl() { saveSettings(); return localStorage.getItem('backend_url') || ''; }
 
-    function getBaseUrl() {
-      saveSettings();
-      return localStorage.getItem('backend_url') || '';
-    }
-
-    // --- Chat History Management ---
+    // --- Chat Session Persistence ---
     function saveChatsToStorage() {
       localStorage.setItem('ai_studio_chats', JSON.stringify(chats));
       localStorage.setItem('ai_studio_active_chat', currentChatId);
       renderSidebar();
     }
+    function getCurrentChat() { return chats.find(c => c.id === currentChatId); }
 
-    function getCurrentChat() {
-      return chats.find(c => c.id === currentChatId);
-    }
-
-    function createNewChat(closeMenu = true) {
-      activeStreamSession++; // Cancel any running stream
+    function createNewChat(close = true) {
+      if (isGenerating) abortGeneration();
       const newChat = {
         id: 'chat_' + Date.now(),
         title: 'New Chat',
@@ -490,26 +606,23 @@
       currentChatId = newChat.id;
       saveChatsToStorage();
       renderCurrentChat();
-      if (closeMenu) closeDrawers();
+      if (close) closeDrawers();
     }
 
     function switchChat(id) {
-      activeStreamSession++;
+      if (isGenerating) abortGeneration();
       currentChatId = id;
       saveChatsToStorage();
       renderCurrentChat();
       closeDrawers();
     }
 
-    function deleteChat(id, event) {
-      event.stopPropagation();
-      activeStreamSession++;
+    function deleteChat(id, e) {
+      e.stopPropagation();
+      if (isGenerating) abortGeneration();
       chats = chats.filter(c => c.id !== id);
-      if (chats.length === 0) {
-        createNewChat(false);
-      } else if (currentChatId === id) {
-        currentChatId = chats[0].id;
-      }
+      if (chats.length === 0) createNewChat(false);
+      else if (currentChatId === id) currentChatId = chats[0].id;
       saveChatsToStorage();
       renderCurrentChat();
     }
@@ -518,25 +631,90 @@
       const list = document.getElementById('chat-list');
       list.innerHTML = '';
       chats.forEach(chat => {
-        const item = document.createElement('div');
-        item.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
-        item.onclick = () => switchChat(chat.id);
+        const row = document.createElement('div');
+        row.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+        row.onclick = () => switchChat(chat.id);
 
         const title = document.createElement('div');
         title.className = 'chat-item-title';
         title.textContent = chat.title;
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-chat-btn';
-        delBtn.textContent = '✕';
-        delBtn.onclick = (e) => deleteChat(chat.id, e);
+        const del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '✕';
+        del.onclick = (e) => deleteChat(chat.id, e);
 
-        item.appendChild(title);
-        item.appendChild(delBtn);
-        list.appendChild(item);
+        row.appendChild(title);
+        row.appendChild(del);
+        list.appendChild(row);
       });
     }
 
+    // --- Markdown & DeepSeek <think> Parser ---
+    function formatAIMessage(rawText) {
+      let content = rawText;
+      let thinkHtml = '';
+
+      // Check for <think> reasoning tags
+      if (content.includes('<think>')) {
+        if (content.includes('</think>')) {
+          const parts = content.split('</think>');
+          const thinkText = parts[0].replace('<think>', '').trim();
+          content = parts.slice(1).join('</think>').trim();
+          thinkHtml = `
+            <details class="think-accordion">
+              <summary>Thinking Process (Tap to Expand)</summary>
+              <div class="think-body">${escapeHtml(thinkText)}</div>
+            </details>
+          `;
+        } else {
+          // Still streaming inside the think phase
+          const thinkText = content.replace('<think>', '').trim();
+          return `
+            <details class="think-accordion" open>
+              <summary>Thinking...</summary>
+              <div class="think-body">${escapeHtml(thinkText)}</div>
+            </details>
+          `;
+        }
+      }
+
+      const parsedMarkdown = marked.parse(content || '');
+      return thinkHtml + parsedMarkdown;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function postProcessCodeBlocks(container) {
+      container.querySelectorAll('pre code').forEach((block) => {
+        if (block.parentElement.parentElement.classList.contains('code-container')) return;
+
+        const pre = block.parentElement;
+        const codeWrapper = document.createElement('div');
+        codeWrapper.className = 'code-container';
+
+        const lang = block.className.replace('language-', '') || 'code';
+        const header = document.createElement('div');
+        header.className = 'code-header';
+        header.innerHTML = `<span>${lang}</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button>`;
+
+        pre.parentNode.insertBefore(codeWrapper, pre);
+        codeWrapper.appendChild(header);
+        codeWrapper.appendChild(pre);
+      });
+    }
+
+    function copySnippet(btn) {
+      const code = btn.closest('.code-container').querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      });
+    }
+
+    // --- Render Messages UI ---
     function renderCurrentChat() {
       const box = document.getElementById('chat-box');
       box.innerHTML = '';
@@ -546,29 +724,42 @@
       document.getElementById('current-chat-title').textContent = chat.title;
 
       if (chat.messages.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'empty-state';
-        empty.textContent = 'Start a conversation below, or tap ⚙ in the top right to connect your tunnel URL and tweak engine settings.';
-        box.appendChild(empty);
+        box.innerHTML = '<div style="margin:auto;text-align:center;color:var(--text-muted);font-size:14px;max-width:260px;line-height:1.5;">Tap ⚙ in top right to connect your Cloudflare URL. Model, voice, and vision are ready.</div>';
         return;
       }
 
       chat.messages.forEach(msg => {
-        appendBubbleUI(msg.role, msg.content, msg.stats || '');
+        appendBubbleUI(msg.role, msg.content, msg.stats || '', msg.images);
       });
     }
 
-    function appendBubbleUI(role, text, statsText = '') {
+    function appendBubbleUI(role, rawContent, statsText = '', images = null) {
       const box = document.getElementById('chat-box');
-      const empty = box.querySelector('.empty-state');
-      if (empty) empty.remove();
+      if (box.querySelector('div[style*="margin:auto"]')) box.innerHTML = '';
 
       const wrapper = document.createElement('div');
       wrapper.className = `message-wrapper ${role === 'user' ? 'user' : 'ai'}`;
 
       const bubble = document.createElement('div');
       bubble.className = 'message';
-      bubble.textContent = text;
+
+      if (role === 'user') {
+        if (images && images.length > 0) {
+          images.forEach(b64 => {
+            const img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${b64}`;
+            img.className = 'msg-attachment-img';
+            bubble.appendChild(img);
+          });
+        }
+        const textSpan = document.createElement('div');
+        textSpan.style.whiteSpace = 'pre-wrap';
+        textSpan.textContent = rawContent;
+        bubble.appendChild(textSpan);
+      } else {
+        bubble.innerHTML = formatAIMessage(rawContent);
+        postProcessCodeBlocks(bubble);
+      }
       wrapper.appendChild(bubble);
 
       let statsEl = null;
@@ -584,25 +775,158 @@
       return { bubble, statsEl };
     }
 
-    // --- Backend Communication ---
-    function populateModelDropdown(modelNames, selected) {
-      const select = document.getElementById('model-select');
-      select.innerHTML = '';
-      modelNames.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-      });
-      if (selected && modelNames.includes(selected)) {
-        select.value = selected;
+    // --- File Attachment Handler (Vision & Text) ---
+    async function handleFileSelection(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
+
+      for (const file of files) {
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+          const b64 = await readFileAsBase64(file);
+          pendingAttachments.push({ name: file.name, isImage: true, content: b64 });
+        } else if (ext === 'pdf') {
+          const text = await extractTextFromPDF(file);
+          pendingAttachments.push({ name: file.name, isImage: false, content: text });
+        } else {
+          const text = await file.text();
+          pendingAttachments.push({ name: file.name, isImage: false, content: text });
+        }
       }
+      input.value = '';
+      renderAttachmentTray();
+    }
+
+    function readFileAsBase64(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function extractTextFromPDF(file) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        return fullText;
+      } catch (err) {
+        return `[PDF read error: ${err.message}]`;
+      }
+    }
+
+    function renderAttachmentTray() {
+      const tray = document.getElementById('attachment-tray');
+      if (pendingAttachments.length === 0) {
+        tray.style.display = 'none';
+        tray.innerHTML = '';
+        return;
+      }
+      tray.style.display = 'flex';
+      tray.innerHTML = '';
+      pendingAttachments.forEach((att, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'tray-chip';
+        chip.innerHTML = `<span>${att.isImage ? '🖼️' : '📄'} ${escapeHtml(att.name)}</span><span class="chip-del" onclick="removeAttachment(${idx})">✕</span>`;
+        tray.appendChild(chip);
+      });
+    }
+
+    function removeAttachment(idx) {
+      pendingAttachments.splice(idx, 1);
+      renderAttachmentTray();
+    }
+
+    // --- Web Speech API (Voice Dictation) ---
+    function initSpeechRecognition() {
+      const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Speech) {
+        document.getElementById('mic-btn').style.display = 'none';
+        return;
+      }
+      recognition = new Speech();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        document.getElementById('mic-btn').classList.add('recording');
+      };
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        const input = document.getElementById('user-input');
+        input.value = (input.value ? input.value + ' ' : '') + transcript;
+        autoResize(input);
+      };
+      recognition.onerror = () => stopRecording();
+      recognition.onend = () => stopRecording();
+    }
+
+    function toggleVoiceInput() {
+      if (!recognition) return alert('Speech recognition not supported on this browser.');
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+    function stopRecording() {
+      isRecording = false;
+      document.getElementById('mic-btn').classList.remove('recording');
+    }
+
+    // --- Generation & Abort Flow ---
+    function handleSendOrAbort() {
+      if (isGenerating) {
+        abortGeneration();
+      } else {
+        sendMessage();
+      }
+    }
+
+    function abortGeneration() {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+      setGeneratingUI(false);
+    }
+
+    function setGeneratingUI(generating) {
+      isGenerating = generating;
+      const btn = document.getElementById('send-btn');
+      if (generating) {
+        btn.textContent = '⏹';
+        btn.classList.add('stop-mode');
+      } else {
+        btn.textContent = '➤';
+        btn.classList.remove('stop-mode');
+      }
+    }
+
+    // --- Models Fetch ---
+    function populateModelDropdown(names, selected) {
+      const sel = document.getElementById('model-select');
+      sel.innerHTML = '';
+      names.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        sel.appendChild(opt);
+      });
+      if (selected && names.includes(selected)) sel.value = selected;
     }
 
     async function fetchModels() {
       const baseUrl = getBaseUrl();
-      if (!baseUrl) return alert('Please enter your backend URL.');
-
+      if (!baseUrl) return alert('Enter tunnel URL first.');
       try {
         const res = await fetch(`${baseUrl}/api/tags`);
         const data = await res.json();
@@ -610,88 +934,118 @@
         localStorage.setItem('cached_models', JSON.stringify(names));
         populateModelDropdown(names, localStorage.getItem('cfg_selected_model'));
         saveSettings();
-        alert('Connected! Loaded ' + names.length + ' models.');
+        alert(`Connected! Loaded ${names.length} models.`);
         closeDrawers();
       } catch (err) {
-        alert('Could not reach Ollama backend: ' + err.message);
+        alert('Could not reach Ollama: ' + err.message);
       }
     }
 
+    // --- Chat Request Pipeline ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
       const baseUrl = getBaseUrl();
       const model = document.getElementById('model-select').value;
 
-      if (!text) return;
+      if (!text && pendingAttachments.length === 0) return;
       if (!baseUrl) {
         toggleDrawer('right');
-        return alert('Please enter your Cloudflare Tunnel URL in Settings first.');
+        return alert('Please enter your backend tunnel URL.');
       }
 
       const chat = getCurrentChat();
       if (!chat) return;
 
-      // Auto-title chat on first message
+      // Extract vision images & text document injection
+      const imagesPayload = [];
+      let docContext = '';
+
+      pendingAttachments.forEach(att => {
+        if (att.isImage) {
+          imagesPayload.push(att.content);
+        } else {
+          docContext += `\n[File Attachment: ${att.name}]\n${att.content}\n`;
+        }
+      });
+
+      const fullUserPrompt = docContext ? `${docContext}\nUser: ${text}` : text;
+
+      // Update chat title if first message
       if (chat.messages.length === 0) {
-        chat.title = text.slice(0, 28) + (text.length > 28 ? '...' : '');
+        chat.title = (text || pendingAttachments[0]?.name || 'Chat').slice(0, 26);
         document.getElementById('current-chat-title').textContent = chat.title;
       }
 
-      chat.messages.push({ role: 'user', content: text });
+      // Record to history
+      const userMsgObj = {
+        role: 'user',
+        content: text,
+        images: imagesPayload.length ? imagesPayload : undefined
+      };
+      chat.messages.push(userMsgObj);
       chat.updatedAt = Date.now();
       saveChatsToStorage();
 
-      appendBubbleUI('user', text);
+      appendBubbleUI('user', text, '', imagesPayload);
+
+      // Clear input & attachments
       input.value = '';
       input.style.height = 'auto';
+      pendingAttachments = [];
+      renderAttachmentTray();
 
       const { bubble: aiBubble, statsEl } = appendBubbleUI('assistant', '...', 'Generating...');
       aiBubble.textContent = '';
+      setGeneratingUI(true);
 
-      // Build payload with optional System Prompt & Engine Settings
+      // Construct Ollama payload
       const systemPrompt = document.getElementById('system-prompt').value.trim();
       const payloadMessages = [];
-      if (systemPrompt) {
-        payloadMessages.push({ role: 'system', content: systemPrompt });
-      }
+      if (systemPrompt) payloadMessages.push({ role: 'system', content: systemPrompt });
+
       chat.messages.forEach(m => {
-        payloadMessages.push({ role: m.role, content: m.content });
+        const item = { role: m.role, content: m.content };
+        if (m.images) item.images = m.images;
+        payloadMessages.push(item);
       });
 
-      const ctxSize = parseInt(document.getElementById('ctx-size').value) || 2048;
+      // Point the last user message to include injected RAG file text
+      if (docContext) {
+        payloadMessages[payloadMessages.length - 1].content = fullUserPrompt;
+      }
+
+      const ctxSize = parseInt(document.getElementById('ctx-size').value) || 4096;
       const temp = parseFloat(document.getElementById('temperature').value) || 0.7;
       const pinVram = document.getElementById('pin-vram').checked;
 
-      const sessionId = ++activeStreamSession;
+      abortController = new AbortController();
       const startTime = performance.now();
       let tokenCount = 0;
+      let fullResponse = '';
+      let buffer = '';
+      let finalStats = '';
 
       try {
         const response = await fetch(`${baseUrl}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
+          signal: abortController.signal,
           body: JSON.stringify({
             model: model,
             messages: payloadMessages,
             stream: true,
-            options: {
-              num_ctx: ctxSize,
-              temperature: temp
-            },
+            options: { num_ctx: ctxSize, temperature: temp },
             keep_alive: pinVram ? -1 : 300
           })
         });
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
-        let fullResponse = '';
-        let buffer = '';
-        let finalStats = '';
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done || sessionId !== activeStreamSession) break;
+          if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -704,9 +1058,10 @@
               if (parsed.message && parsed.message.content) {
                 fullResponse += parsed.message.content;
                 tokenCount++;
-                aiBubble.textContent = fullResponse;
 
-                // Live t/s estimate while streaming
+                aiBubble.innerHTML = formatAIMessage(fullResponse);
+                postProcessCodeBlocks(aiBubble);
+
                 const elapsedSec = (performance.now() - startTime) / 1000;
                 if (elapsedSec > 0.2) {
                   statsEl.textContent = `${(tokenCount / elapsedSec).toFixed(1)} t/s`;
@@ -714,7 +1069,6 @@
                 document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
               }
 
-              // Exact t/s calculation from Ollama hardware metrics on completion
               if (parsed.done && parsed.eval_count && parsed.eval_duration) {
                 const exactTps = parsed.eval_count / (parsed.eval_duration / 1e9);
                 finalStats = `${exactTps.toFixed(1)} t/s • ${parsed.eval_count} tokens`;
@@ -724,18 +1078,64 @@
           }
         }
 
-        if (sessionId === activeStreamSession) {
-          chat.messages.push({
-            role: 'assistant',
-            content: fullResponse,
-            stats: finalStats || statsEl.textContent
-          });
-          saveChatsToStorage();
-        }
+        chat.messages.push({
+          role: 'assistant',
+          content: fullResponse,
+          stats: finalStats || statsEl.textContent
+        });
+        saveChatsToStorage();
+
       } catch (err) {
-        aiBubble.textContent = 'Error: ' + err.message;
-        statsEl.textContent = 'Failed';
+        if (err.name === 'AbortError') {
+          statsEl.textContent = 'Generation stopped.';
+          if (fullResponse) {
+            chat.messages.push({ role: 'assistant', content: fullResponse, stats: 'Stopped' });
+            saveChatsToStorage();
+          }
+        } else {
+          aiBubble.textContent = 'Error: ' + err.message;
+          statsEl.textContent = 'Failed';
+        }
+      } finally {
+        setGeneratingUI(false);
+        abortController = null;
       }
+    }
+
+    // --- Export / Import ---
+    function exportCurrentChat() {
+      const chat = getCurrentChat();
+      if (!chat) return;
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chat, null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = `${chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      a.click();
+    }
+
+    function importChat(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.messages && Array.isArray(imported.messages)) {
+            imported.id = 'chat_' + Date.now();
+            chats.unshift(imported);
+            currentChatId = imported.id;
+            saveChatsToStorage();
+            renderCurrentChat();
+            closeDrawers();
+          } else {
+            alert('Invalid chat file format.');
+          }
+        } catch (err) {
+          alert('Failed to parse JSON file.');
+        }
+      };
+      reader.readAsText(file);
+      input.value = '';
     }
   </script>
 </body>
